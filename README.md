@@ -117,3 +117,34 @@ git pull
 docker-compose pull
 docker-compose up -d
 ```
+
+## Local TLS (Caddy internal CA)
+
+This setup uses Caddy's internal CA by default (no public ACME certificates). Caddy stores the generated root certificate at:
+
+- `caddy/data/pki/authorities/local/root.crt`
+
+To trust the certificate on your machine so browsers and tools accept the site without warnings:
+
+- Windows (Admin PowerShell):
+   ```powershell
+   Import-Certificate -FilePath .\caddy\data\pki\authorities\local\root.crt -CertStoreLocation Cert:\LocalMachine\Root
+   ```
+   Or use the provided helper script (run as Administrator for machine-wide trust):
+   ```powershell
+   .\scripts\trust-caddy-root.ps1 -CertPath .\caddy\data\pki\authorities\local\root.crt -Scope LocalMachine
+   ```
+
+- Debian/Ubuntu:
+   ```bash
+   sudo cp caddy/data/pki/authorities/local/root.crt /usr/local/share/ca-certificates/searxng-root.crt
+   sudo update-ca-certificates
+   ```
+
+- macOS (system-wide):
+   ```bash
+   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain caddy/data/pki/authorities/local/root.crt
+   ```
+
+After installing the root certificate you may need to restart browsers or the OS trust service. If you later want real public certificates, reconfigure the `Caddyfile` to use ACME (DNS-01 or HTTP-01) and provide appropriate credentials.
+

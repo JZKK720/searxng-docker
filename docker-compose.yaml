@@ -1,16 +1,25 @@
 services:
   caddy:
     container_name: caddy
-    image: docker.io/library/caddy:2-alpine
-    network_mode: host
+    image: caddy:2-alpine
     restart: unless-stopped
+    depends_on:
+      - searxng
+    networks:
+      - searxng
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data:rw
-      - caddy-config:/config:rw
+      - ./caddy:/etc/caddy:ro
+      - ./caddy/data:/data:rw
+      - ./caddy/config:/config:rw
+    ports:
+      - "3443:443"
+      - "8443:80"
+      - "443:443"
+      - "80:80"
+    
     environment:
-      - SEARXNG_HOSTNAME=${SEARXNG_HOSTNAME:-http://localhost}
-      - SEARXNG_TLS=${LETSENCRYPT_EMAIL:-internal}
+      - SEARXNG_HOSTNAME=isearxng.cubecloud.io
+      - SEARXNG_TLS=
     logging:
       driver: "json-file"
       options:
@@ -25,7 +34,7 @@ services:
     networks:
       - searxng
     volumes:
-      - valkey-data2:/data
+      - ./valkey/data:/data
     logging:
       driver: "json-file"
       options:
@@ -39,12 +48,13 @@ services:
     networks:
       - searxng
     ports:
-      - "127.0.0.1:8080:8080"
+      - "8334:8080"
     volumes:
       - ./searxng:/etc/searxng:rw
-      - searxng-data:/var/cache/searxng:rw
+      - ./searxng/cache:/var/cache/searxng:rw
     environment:
-      - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
+      - SEARXNG_HOSTNAME=isearxng.cubecloud.io
+      - SEARXNG_BASE_URL=https://isearxng.cubecloud.io/
     logging:
       driver: "json-file"
       options:
@@ -53,9 +63,4 @@ services:
 
 networks:
   searxng:
-
-volumes:
-  caddy-data:
-  caddy-config:
-  valkey-data2:
-  searxng-data:
+ 
