@@ -148,3 +148,39 @@ To trust the certificate on your machine so browsers and tools accept the site w
 
 After installing the root certificate you may need to restart browsers or the OS trust service. If you later want real public certificates, reconfigure the `Caddyfile` to use ACME (DNS-01 or HTTP-01) and provide appropriate credentials.
 
+### Helper scripts
+
+This repo includes helper scripts to install the Caddy internal root certificate on common platforms:
+
+- Windows helper: `scripts/trust-caddy-root.ps1` (PowerShell; run as Administrator for machine-wide trust)
+- Linux helper: `scripts/trust-caddy-root-linux.sh` (run with sudo if required)
+- macOS helper: `scripts/trust-caddy-root-macos.sh` (requires sudo)
+
+Example usage (macOS / Linux):
+
+```bash
+# macOS (requires sudo):
+sudo ./scripts/trust-caddy-root-macos.sh ./caddy/data/pki/authorities/local/root.crt
+
+# Debian/Ubuntu:
+sudo ./scripts/trust-caddy-root-linux.sh ./caddy/data/pki/authorities/local/root.crt
+```
+
+### Re-enable ACME (DNS-01 with Cloudflare) later
+
+If you want real public certificates later using Cloudflare DNS-01, revert the `tls` directive in the Caddyfile to:
+
+```
+tls {
+   dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+}
+```
+
+Then provide a Cloudflare API token with DNS edit permissions (recommended: scoped to the specific zone) as the `CLOUDFLARE_API_TOKEN` environment variable for the `caddy` service in `docker-compose.yaml` or in a `.env` file. To use DNS-01 you will also need a Caddy build that includes the `cloudflare` DNS provider plugin; the upstream `caddy:2-alpine` image does not include this plugin by default. Options:
+
+- Build a custom Caddy image with `xcaddy` including `github.com/caddy-dns/cloudflare` (advanced). See `caddy/Dockerfile` in this repo for an example.
+- Use a prebuilt image that includes the Cloudflare DNS plugin.
+
+When ready, update the `Caddyfile`, supply `CLOUDFLARE_API_TOKEN`, and restart the `caddy` service; Caddy will request certificates via DNS-01.
+
+
